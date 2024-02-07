@@ -31,7 +31,12 @@ def _post_wx_request(wechatId: object, requestData: object) -> object:
     response = requests.post(requestUrl, json=requestData)
     if response.status_code != 200:
         raise Exception(f"wechat request error, wechatId:{wechatId} response: {response}")
-    return json.loads(response.text)["data"]
+    try:
+        return json.loads(response.text)["data"]
+    except Exception as e:
+        log.error(f"wechat request error, wechatId:{wechatId} response: {response} exception: {e}")
+        # 抛异常
+        raise e
 
 
 def randomMd5(param):

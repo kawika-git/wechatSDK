@@ -50,7 +50,7 @@ def get_channel_list(wechat_id, channel_user_id, lastBuffer=None):
         req["lastBuffer"] = lastBuffer
 
     resdata = WechatUtils._post_wx_request(wechat_id, req)
-    return resdata
+    return resdata['data']
 
 
 # 视频号作品解密

@@ -3,17 +3,19 @@ from __future__ import annotations
 import datetime
 import json
 import logging
-from typing import Any
-
+import os
+import pilk
 import httpx
 import openai
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+from pydub import AudioSegment
 
 from bot.config.config_loader import ChatGptConfig
 from bot.infrastructure.PluginManager import PluginManager
 from bot.infrastructure.Utils import is_direct_result
 from bot.infrastructure.chatgpt import OpenAIUtils
+from bot.utils import IdUtils
 
 log = logging.getLogger(__name__)
 
@@ -50,14 +52,38 @@ class OpenAIHelper:
         return len(self.conversations[chat_id]), OpenAIUtils.count_tokens(self.conversations[chat_id],
                                                                           self.config['model'])
 
-    def get_chat_response(self, chat_id: int, query: str, prompt: str = None, maxCount: int = None) -> tuple[
-                                                                                                                 Any, str] | \
-                                                                                                             tuple[
-                                                                                                                 str, int]:
+    def tts(self, content: str):
+        """
+        转语音
+        """
+        fileName = str(IdUtils.generate_unique_numeric())
+        if not os.path.exists("channel"):
+            os.makedirs("channel")
+        # 获取当前目录的绝对路径
+        filePath = os.path.abspath("channel")
+        speech_file_path = filePath + os.sep + fileName+ ".mp3"
+        # "alloy", "echo", "fable", "onyx", "nova", "shimmer"
+        response = self.openai_client.audio.speech.create(
+            model="tts-1",
+            voice="echo",
+            input=content,
+        )
+        response.stream_to_file(speech_file_path)
+        audio = AudioSegment.from_mp3(speech_file_path)
+        # 调整采样率和编码格式
+        # audio = audio.set_frame_rate(44100).set_channels(1).set_sample_width(2)
+        wavPath = filePath + os.sep + fileName+".pcm"
+        audio.export(wavPath, format="s16le")
+        silkPath = filePath + os.sep + fileName+".silk"
+        pilk.encode(wavPath, silkPath, pcm_rate=24000, tencent=True)
+        return silkPath,audio.duration_seconds
+
+    def get_chat_response(self, chat_id: int, query: str, prompt: str = None, maxCount: int = None,model: str = None) :
         """
         #
         从GPT模型获取完整响应。
         Gets a full response from the GPT model.
+        :param model:
         :param maxCount:  最大文字数
         :param prompt: 辅助提示
         :param chat_id: The chat ID
@@ -65,11 +91,13 @@ class OpenAIHelper:
         :return: The answer from the model and the number of tokens used
         """
         plugins_used = ()
-        response = self.__common_get_chat_response(chat_id, query, prompt=prompt, maxCount=maxCount)
+        response = self.__common_get_chat_response(chat_id, query, prompt=prompt, maxCount=maxCount,model=model)
         if self.config['enable_functions']:
             response, plugins_used = self.__handle_function_call(chat_id, response)
             if is_direct_result(response):
-                return response.choices[0].message.content.strip(), response.usage.total_tokens
+                content=response.choices[0].message.content.strip()
+                self.__add_to_history(chat_id, role="assistant", content=content)
+                return content, response.usage.total_tokens
 
         answer = ''
 
@@ -143,7 +171,8 @@ class OpenAIHelper:
         wait=wait_fixed(20),
         stop=stop_after_attempt(3)
     )
-    def __common_get_chat_response(self, chat_id: int, query: str, stream=False, prompt=None, maxCount=None):
+    def __common_get_chat_response(self, chat_id: int, query: str, stream=False, prompt=None, maxCount=None,model=None):
+
         """
         todo async
         Request a response from the GPT model.
@@ -151,6 +180,7 @@ class OpenAIHelper:
         :param query: The query to send to the model
         :return: The answer from the model and the number of tokens used
         """
+        model = self.config['model'] if model is None else model
         try:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
                 self.reset_chat_history(chat_id, prompt)
@@ -160,12 +190,12 @@ class OpenAIHelper:
             self.__add_to_history(chat_id, role="user", content=query)
 
             # Summarize the chat history if it's too long to avoid excessive token usage
-            token_count = OpenAIUtils.count_tokens(self.conversations[chat_id], self.config['model'])
-            exceeded_max_tokens = token_count + self.config['max_tokens'] > OpenAIUtils.max_model_tokens(
-                self.config['model'])
+            # token_count = OpenAIUtils.count_tokens(self.conversations[chat_id], model)
+            # exceeded_max_tokens = token_count + self.config['max_tokens'] > OpenAIUtils.max_model_tokens(model)
             exceeded_max_history_size = len(self.conversations[chat_id]) > self.config['max_history_size']
 
-            if exceeded_max_tokens or exceeded_max_history_size:
+            # if exceeded_max_tokens or exceeded_max_history_size:
+            if exceeded_max_history_size:
                 logging.info(f'Chat history for chat ID {chat_id} is too long. Summarising...')
                 try:
                     summary = self.__summarise(self.conversations[chat_id][:-1])
@@ -178,7 +208,7 @@ class OpenAIHelper:
                     self.conversations[chat_id] = self.conversations[chat_id][-self.config['max_history_size']:]
 
             common_args = {
-                'model': self.config['model'],
+                'model': model,
                 'messages': self.conversations[chat_id],
                 'temperature': self.config['temperature'],
                 'n': self.config['n_choices'],

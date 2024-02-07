@@ -35,7 +35,7 @@ def get_user_info(wechat_id, user_ids):
         "userNames": user_ids
     }
     resdata = WechatUtils._post_wx_request(wechat_id, req)
-    return resdata
+    return resdata['data']['profiles']
 
 # 获取用户信息 map格式
 def get_group_user_info_map(wechat_id, userIdOrGroupId):

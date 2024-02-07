@@ -20,6 +20,26 @@
       },
       "群 xxx@chatroom | xxxxx@chatroom": {
         "去水印，只有配置了该群，才能在群里去水印 | type": "deWaterMark"
+      },
+      "关键字回复群 | xxxxxxx@chatroom": {
+        "type": "out_address_book",
+        "extend": {
+          "address_book": [
+            {
+              "key": "废品电话",
+              "value": "收废品电话：xxxxx"
+            },{
+              "key": "物业电话",
+              "value": "物业电话：（xxxx）xxxxx"
+            }
+          ]
+        }
+      },
+      "gpts群 | xxxx@chatroom": {
+        "type": "gpts",
+        "extend": {
+          "mode": "gpt-4-gizmo-g-xKQxiRLrA"
+        }
       }
     },
     "默认语 | defaultPrompt": {
@@ -29,7 +49,16 @@
     "免费次数 | freeCount": {
       "文本免费次数 -1则表示不限制 | text":10,
       "图片免费次数 -1则表示不限制 | image": 2,
-      "去水印免费次数 -1则表示不限制 | deWaterMark": 2
+      "去水印免费次数 -1则表示不限制 | deWaterMark": 2,
+      "gpts对话 -1则表示不限制 | gpts": 2
+    },
+    "assistantsUser": {
+      "用户id | wxid_xxxx": {
+        "assistants": "asst_xxxxx"
+      },
+      "用户id2  | wxid_xxxx": {
+        "assistants": "asst_xxxxx"
+      }
     },
     "关键字回复 完全匹配 | msgReplay": [
       {

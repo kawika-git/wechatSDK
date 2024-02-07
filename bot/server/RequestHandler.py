@@ -65,5 +65,4 @@ class RequestHandler:
             for replaceItem in data:
                 wechatId, content, wxid = replaceItem[1], replaceItem[4], replaceItem[5]
                 if wechatId in WechatConfig_defaultPrompt:
-                    SendMsgNativeApi.send_text_message_base \
-                        (wechatId, wxid, WechatConfig_defaultPrompt[wechatId]["defaultReply"], wxid)
+                    SendMsgNativeApi.send_text_message_base(wechatId, wxid, WechatConfig_defaultPrompt[wechatId]["defaultReply"])

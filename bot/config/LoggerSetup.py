@@ -22,6 +22,8 @@ def setup_logging():
     root_logger.setLevel(logging.INFO)
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
+    # 防止日志消息被重复处理
+    root_logger.propagate = False
 
 
 def error_logger(func):

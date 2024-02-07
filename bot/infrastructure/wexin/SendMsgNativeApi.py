@@ -18,7 +18,7 @@ def send_text_message_base(wechat_id, userIdOrGroupId, content, atUserList=[]):
     # if not (userIdOrGroupId.startswith("wxid_") or userIdOrGroupId.endswith("@chatroom")):
     #     raise Exception(f"userIdOrGroupId必须是群id，且长度不能超过100,{userIdOrGroupId}")
     if content is None or content == '':
-        raise Exception("content不能为空")
+        return None
     if userIdOrGroupId.endswith("@chatroom"):
         user_data_map = ContactNativeApi.get_group_user_info_map(wechat_id, userIdOrGroupId)
         content = content

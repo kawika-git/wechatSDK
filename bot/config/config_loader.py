@@ -6,16 +6,6 @@ from dotenv import load_dotenv
 from bot.infrastructure.chatgpt import OpenAIUtils
 
 
-def loadEmailConfig():
-    load_dotenv()
-    return {
-        'email': os.environ['EMAIL_USERNAME'],
-        'password': os.environ['EMAIL_PASSWORD'],
-        'email_notice_wx_from': os.environ['EMAIL_NOTICE_WX_FROM'],
-        'email_notice_wx_to': os.environ['EMAIL_NOTICE_WX_TO'],
-    }
-
-
 def loadCosConfig():
     load_dotenv()
     return {
@@ -147,8 +137,9 @@ WechatConfig_msgReplay = getWechatConfig_msgReplay("msgReplay")
 WechatConfig_is_debug = getWechatConfig("debug")
 # 微信配置变量 调试模式下的微信ID
 WechatConfig_debugFromName = getWechatConfig("debugFromName")
+# 开启了assistants api的用户
+WechatConfig_assistantsUser = getWechatConfig("assistantsUser")
 DOWN_FILE_PATH = os.path.abspath("channel") + os.sep
-
 if not os.path.exists(DOWN_FILE_PATH):
     os.makedirs(DOWN_FILE_PATH)
 

@@ -1,4 +1,5 @@
 import logging
+import random
 import re
 import time
 
@@ -7,10 +8,13 @@ import xmltodict
 from bot.config import config_loader
 from bot.config.config_loader import WechatConfig_chatRoomPrompt, WechatConfig_adminWxid, WechatConfig_enable_gpt, \
     WechatConfig_msgReplay, WechatConfig_is_debug, \
-    WechatConfig_debugFromName, WechatConfig_free_call_ai
+    WechatConfig_debugFromName, WechatConfig_free_call_ai, WechatConfig_assistantsUser
+from bot.infrastructure.chatgpt.OpenAIAssistantsApi import OpenAIAssistantsApi
 from bot.infrastructure.chatgpt.OpenAIHelper import OpenAIHelper
 from bot.infrastructure.cos.CosManager import CosManager
-from bot.infrastructure.wexin import SendMsgNativeApi, GroupNativeApi, ChannelNativeApi, CdnNativeApi, MomentsNativeApi
+from bot.infrastructure.randomMsg import RandomMsg
+from bot.infrastructure.wexin import SendMsgNativeApi, GroupNativeApi, ChannelNativeApi, CdnNativeApi, MomentsNativeApi, \
+    ContactNativeApi
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +24,7 @@ class WechatMsgHandle:
     def __init__(self):
 
         self.chatgpt_client = OpenAIHelper()
+        self.chatgpt_Assistants_Api = OpenAIAssistantsApi()
         self.cos_client = CosManager()
         # 呼叫管理员的用户
         self.callAdminUser = {}
@@ -71,27 +76,31 @@ class WechatMsgHandle:
         self.userChatCount[wechatId][userKey] += 1
 
     def handle_user_message(self, wechatId, msgId, fromWechatId, msgContent, msgXml, response_content_body):
-        debugAndconnect =  self.checkDebugConnect(wechatId, fromWechatId, msgContent, msgXml, response_content_body)
-        if not debugAndconnect:
+        # 如果开启了全局assistant，则调用assistant
+        assistantModel = self.checkAssistantUser(wechatId, 'globleUser')
+        if assistantModel:
+            self.getAssistantResponse(wechatId, fromWechatId, msgContent, assistantModel)
             return
-
-        if msgContent == "清除记忆":
-            self.chatgpt_client.reset_chat_history(fromWechatId)
-            SendMsgNativeApi.send_text_message_base(wechatId, fromWechatId, "清除记忆成功")
-            return
+        # 默认词库回复
         if wechatId in WechatConfig_msgReplay and msgContent in WechatConfig_msgReplay[wechatId]:
             self.handle_MsgReplay(wechatId, fromWechatId, msgContent, msgXml, response_content_body)
             return
-
+        # 如果，呼叫了管理员，则10分钟不处理消息
         if self.callAdminUser.get(wechatId) and fromWechatId in self.callAdminUser.get(wechatId)and \
                 time.time() - self.callAdminUser.get(wechatId)[fromWechatId] < 600:
             return
-
-            # 如果是管理员发的消息
+        # 如果对用户开启了assistant，则调用assistant
+        assistantModel = self.checkAssistantUser(wechatId, fromWechatId)
+        if assistantModel:
+            self.getAssistantResponse(wechatId, fromWechatId, msgContent, assistantModel)
+            return
+        # 是debug模式，并且debug用户没在名单中，则不处理
+        debugAndconnect = self.checkDebugConnect(wechatId, fromWechatId, msgContent, msgXml, response_content_body)
+        if not debugAndconnect:
+            return
         adminMsgFlag = self.chekAdminMsgFlag(wechatId, response_content_body)
         # 如果开启聊天功能
         self.getAiChatResponse(wechatId, fromWechatId, msgContent)
-
         return
     def checkDebugConnect(self, wechatId, fromWechatId, msgContent, msgXml, response_content_body):
         # 不是debug模式，返回继续
@@ -115,13 +124,28 @@ class WechatMsgHandle:
         # 如果reversed1中atuserlist标签中包含自己的id，说明是@自己的消息
         send_content = msgContent.split(":\n")
         group_mes_send_user, msgContent = send_content[0], send_content[1]
+        msgContent = re.sub(r'@[^\u2005]+', '', msgContent).strip()
         msgContent = re.sub(r'@[^\u2005]+ ', '', msgContent).strip()
 
         # 如果是管理员发的消息
         adminMsgFlag = self.chekAdminMsgFlag(wechatId, response_content_body)
-        if self.getChatRoomType(wechatId, fromWechatId) == "moments" and adminMsgFlag:
+        chatroomType = self.getChatRoomType(wechatId, fromWechatId)
+        if chatroomType == "moments" and adminMsgFlag:
             # 如果是朋友圈消息 ,并且是管理原消息，则开始发送朋友圈
             self.push_moments_message(wechatId, "text", fromWechatId, msgContent, msgXml, response_content_body)
+            return
+        if chatroomType == "out_address_book":
+            # 外部的群，获取通讯录
+            finalMsg = ""
+            extendData = self.getChatRoomExtend(wechatId, fromWechatId)
+            bookList = extendData['address_book']
+            for item in bookList:
+                # 使用re模块进行匹配
+                if re.search(item['key'], msgContent):
+                    finalMsg += item['value'] + "\n"
+            if finalMsg != "":
+                finalMsg += "\n" + RandomMsg.getRandomMsg()
+                SendMsgNativeApi.send_text_message_base(wechatId, fromWechatId, finalMsg, [group_mes_send_user])
             return
 
         debugAndconnect = self.checkDebugConnect(wechatId, fromWechatId, msgContent, msgXml, response_content_body)
@@ -132,7 +156,7 @@ class WechatMsgHandle:
         if wechatId in msgXml and self.getChatRoomCanAi(wechatId, fromWechatId):
             # 调用chatgpt回复
             self.getAiChatResponse(wechatId, group_mes_send_user, msgContent,
-                                         fromWechatId)
+                                   fromWechatId)
 
     def handle_group_image_message(self, wechatId, msgId, fromWechatId, msgContent, msgXml,
                                          response_content_body):
@@ -150,6 +174,11 @@ class WechatMsgHandle:
 
     def getAiChatResponse(self, wechatId, userId, msgContent, groupId=None):
         if not WechatConfig_enable_gpt[wechatId]:
+            return
+            # 剩下的才是ChatGPT
+        if msgContent == "清除记忆":
+            self.chatgpt_client.reset_chat_history(userId)
+            SendMsgNativeApi.send_text_message_base(wechatId, userId, "清除记忆成功")
             return
         type = "text" if not groupId else self.getChatRoomType(wechatId, groupId)
         chatId = userId if not groupId else groupId + userId
@@ -172,6 +201,19 @@ class WechatMsgHandle:
             # response, total_tokens = msgContent, 0
             # 调用微信发送消息接口
             SendMsgNativeApi.send_text_message_base(wechatId, groupId if groupId else userId, response, [userId] if groupId else [])
+            self.addUserToken(wechatId, userId, type, total_tokens)
+        if type == "gpts":
+            extend=self.getChatRoomExtend(wechatId, groupId)
+            response, total_tokens = self.chatgpt_client.get_chat_response(chat_id=chatId, query=msgContent,model=extend["mode"])
+            # response, total_tokens = msgContent, 0
+            if random.randint(0, 10) > 3:
+                SendMsgNativeApi.send_text_message_base(wechatId, groupId if groupId else userId, response, [userId] if groupId else [])
+            else:
+                slikFilePath,duration_seconds = self.chatgpt_client.tts(response)
+                if duration_seconds > 59:
+                    SendMsgNativeApi.send_text_message_base(wechatId, groupId if groupId else userId, "语音超过1分钟，无法发送", [userId] if groupId else [])
+                else:
+                    SendMsgNativeApi.send_voice_message(wechatId, groupId if groupId else userId, slikFilePath)
             self.addUserToken(wechatId, userId, type, total_tokens)
         if type == "image":
             chatRoomGroup = self.getChatRoomConfig(wechatId, groupId)
@@ -210,6 +252,9 @@ class WechatMsgHandle:
         if self.getChatRoomCanAi(wechatId, groupId):
             return WechatConfig_chatRoomPrompt[wechatId][groupId]["type"]
         return ''
+
+    def getChatRoomExtend(self, wechatId, groupId):
+        return WechatConfig_chatRoomPrompt[wechatId][groupId]["extend"]
 
     def getChatRoomConfig(self, wechatId, groupId):
         if self.getChatRoomCanAi(wechatId, groupId):
@@ -297,15 +342,14 @@ class WechatMsgHandle:
                 if "cosDeWaterMark" in config_loader.WechatConfig_defaultPrompt[wechatId]:
                     basePrompt = config_loader.WechatConfig_defaultPrompt[wechatId]["cosDeWaterMark"]
                 basePrompt += cos_url + "\n"
-                basePrompt += "\n作者：" + finderNickName
-                basePrompt += "\n标题：" + finderDescription
+                basePrompt += "\n作者：" + str(finderNickName)
+                basePrompt += "\n标题：" + str(finderDescription)
                 SendMsgNativeApi.send_text_message_base(wechatId
                                                         , groupId if groupId else senderUserName
                                                         , basePrompt
                                                         , [senderUserName] if groupId else [])
                 self.addUserToken(wechatId, senderUserName, chatType, 0)
             except Exception as e:
-                print(e)
                 SendMsgNativeApi.send_text_message_base(wechatId, fromWechatId,
                                                         "解码失败，请稍后再试，如仍失败请联系管理员")
                 return
@@ -347,4 +391,17 @@ class WechatMsgHandle:
             self.moments_msg_cache[wechatId]["image"].append(imgPath)
             return
 
+        pass
+
+    def checkAssistantUser(self, wechatId, fromWechatId):
+        if wechatId in WechatConfig_assistantsUser:
+            if fromWechatId in WechatConfig_assistantsUser[wechatId]:
+                return WechatConfig_assistantsUser[wechatId][fromWechatId]["assistants"]
+        return None
+
+    def getAssistantResponse(self, wechatId, fromWechatId, msgContent, assistantModel):
+        user = ContactNativeApi.get_user_info(wechatId, [fromWechatId])[0]
+        userName = user['remark'] if user['remark'] else user['nickName']
+        message = self.chatgpt_Assistants_Api.generate_response(msgContent, fromWechatId, assistantModel, userName)
+        SendMsgNativeApi.send_text_message_base(wechatId, fromWechatId, message)
         pass

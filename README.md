@@ -25,10 +25,11 @@
 
 ### 启动程序
 
-1. 复制 `env_wechat_back.json` 文件并将其重命名为 `env_wechat.json`，然后修改文件内容。
-2. 打开cmd，并进去 `wechatSDK` 目录，运行 `pip -m venv venv` 并开启虚拟环境 `venv/Scripts/activate`。
-3. 运行 `pip install -r requirements.txt` 安装所有依赖。
-2. 运行 `python app.py` 启动程序。
+1. 打开cmd，并进去 `wechatSDK` 目录，运行 `python -m venv venv` 并开启虚拟环境 `venv/Scripts/activate`。
+2. 运行 `pip install -r requirements.txt` 安装所有依赖。
+3. 复制 `env_wechat_back.json` 文件并将其重命名为 `env_wechat.json`，然后修改文件内容。
+   4. 
+4. 运行 `python app.py` 启动程序。
 
 ## 依赖 📦
 
