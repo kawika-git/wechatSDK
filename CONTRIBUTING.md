@@ -24,7 +24,7 @@ Thank you for considering contributing to our WechatSDK snippets repository! I w
    ```
 6. Open a pull request from your forked repository to the main repository, describing the changes you've made and their purpose.（从分支存储库向主存储库打开一个 pull 请求，描述所做的更改及其目的）
 
-## Contribution Guidelines
+## Contribution Guidelines  贡献指引
 
 - Ensure your code adheres to Python's PEP 8 style guide.
 - 确保您的代码符合 Python 的 PEP8样式指南。
