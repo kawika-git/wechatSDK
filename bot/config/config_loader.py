@@ -140,6 +140,7 @@ WechatConfig_debugFromName = getWechatConfig("debugFromName")
 # 开启了assistants api的用户
 WechatConfig_assistantsUser = getWechatConfig("assistantsUser")
 DOWN_FILE_PATH = os.path.abspath("channel") + os.sep
+
 if not os.path.exists(DOWN_FILE_PATH):
     os.makedirs(DOWN_FILE_PATH)
 

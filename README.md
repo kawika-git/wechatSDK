@@ -27,13 +27,21 @@
 
 1. 打开cmd，并进去 `wechatSDK` 目录，运行 `python -m venv venv` 并开启虚拟环境 `venv/Scripts/activate`。
 2. 运行 `pip install -r requirements.txt` 安装所有依赖。
-3. 复制 `env_wechat_back.json` 文件并将其重命名为 `env_wechat.json`，然后修改文件内容。
-   4. 
+3. 复制 `env_wechat_back.json` 文件并将其重命名为 `env_wechat.json`，然后修改文件内容(记得去除掉[|]以前的中文哦)。
 4. 运行 `python app.py` 启动程序。
+
 
 ## 依赖 📦
 
 项目依赖于 [wechatAPI](https://github.com/kawika-git/wechatAPI)。请确保安装所有必要的依赖。
+
+## 常问问题
+- JSON中的值如何填写
+  - 通过postman调用api填写json中最外层的wxid
+  - 启动程序后，等待消息回调，在群内、给好友发信息接收到回调信息后填充json中其他值信息
+- ChatGPT并没有支持GPTs的API，你是如何做的
+  - 有些提供openai中转服务的厂商，他们通过破解openai的API，提供了GPTs的API服务，api价格比官方还便宜
+  - 自用中转，推荐理由：稳定、价格低、售后服务好：[ChatGPT中转商](https://sourl.cn/p4JDca) 
 
 ## 如何贡献 🤝
 
