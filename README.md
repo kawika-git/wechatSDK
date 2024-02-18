@@ -22,7 +22,7 @@
 
 ### 微信启动
 
-- API启动器来源：[https://github.com/kawika-git/wechatAPI](https://github.com/kawika-git/wechatAPI)
+- [API启动器来源](https://github.com/kawika-git/wechatAPI)
 
 ### 启动程序
 
