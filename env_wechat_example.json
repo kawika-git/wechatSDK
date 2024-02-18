@@ -1,0 +1,75 @@
+{
+  "wxid_xxxxx": {
+    "enable": true,
+    "enableChat": true,
+    "enableAutoVerify": true,
+    "managementWechatId": "wxid_xxx",
+    "requestUrl": "http://127.0.0.1:8888/api/",
+    "callbackUrl": "http://127.0.0.1:18000/weixinCallback",
+    "chatRoomPrompt": {
+      "xxx@chatroom": {
+        "type": "text",
+        "prompt": "模拟一个自信且擅长交际的‘渣男’角色，他对女性使用不超过100字的简短回答。这个角色在对话中运用赞美和恭维来吸引女性注意，以轻松幽默的方式回应，显示自信。面对女生的不满，他巧妙地使用简短的甜言蜜语和模糊的承诺回应，目的是保持对方的兴趣，但不认真对待关系。他的回复避免冒犯或不尊重，确保对话在友好和轻松的氛围中进行。",
+        "maxCount": 200
+      },
+      "xxxx@chatroom": {
+        "type": "image",
+        "image_size":  "1024x1024",
+        "image_model": "dall-e-3",
+        "image_quality": "hd"
+      },
+      "xxxxx@chatroom": {
+        "type": "deWaterMark"
+      },
+      "xxxxxxx@chatroom": {
+        "type": "out_address_book",
+        "extend": {
+          "address_book": [
+            {
+              "key": "废品电话",
+              "value": "收废品电话：xxxxx"
+            },{
+              "key": "物业电话",
+              "value": "物业电话：（xxxx）xxxxx"
+            }
+          ]
+        }
+      },
+      "xxxxxx@chatroom": {
+        "type": "gpts",
+        "extend": {
+          "mode": "gpt-4-gizmo-g-xKQxiRLrA"
+        }
+      }
+    },
+    "defaultPrompt": {
+      "cosDeWaterMark": "解析完成，请在30分钟内完成下载，否则将无法下载\n\n",
+      "defaultReply": "体验AI请回复以下任何一个关键词：\n搭讪\n技术群\n回复【合作】可呼叫管理员"
+    },
+    "freeCount": {
+      "text":10,
+      "image": 2,
+      "deWaterMark": 2,
+      "gpts": 2
+    },
+    "assistantsUser": {
+      "wxid_xxxx": {
+        "assistants": "asst_xxxxx"
+      },
+      "wxid_xxxxxx": {
+        "assistants": "asst_xxxxx"
+      }
+    },
+    "msgReplay": [
+      {
+        "tag": "合作",
+        "replaceType": "callAdmin"
+      },
+      {
+        "tag": "进入去水印群",
+        "replaceType": "inviteGroup",
+        "groupId": "xxxxxxx@chatroom"
+      }
+    ]
+  }
+}
