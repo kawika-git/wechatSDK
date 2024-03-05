@@ -52,12 +52,12 @@
       "去水印免费次数 -1则表示不限制 | deWaterMark": 2,
       "gpts对话 -1则表示不限制 | gpts": 2
     },
-    "assistantsUser": {
+    "openai 的 assistantAPI | assistantsUser": {
       "用户id | wxid_xxxx": {
-        "assistants": "asst_xxxxx"
+        "assistant的id | assistants": "asst_xxxxx"
       },
       "用户id2  | wxid_xxxx": {
-        "assistants": "asst_xxxxx"
+        "assistant的id2 | assistants": "asst_xxxxx"
       }
     },
     "关键字回复 完全匹配 | msgReplay": [
