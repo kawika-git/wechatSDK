@@ -145,8 +145,7 @@ if not os.path.exists(DOWN_FILE_PATH):
     os.makedirs(DOWN_FILE_PATH)
 
 # 发朋友圈模版
-SEND_MOMENTS_TEMPLATE = """
-<TimelineObject>
+SEND_MOMENTS_TEMPLATE = """<TimelineObject>
 	<id>
 		<![CDATA[{momentsId}]]>
 	</id>
@@ -222,8 +221,7 @@ SEND_MOMENTS_TEMPLATE = """
 	</streamvideo>
 </TimelineObject>
 """
-SEND_MOMENTS_MEDIA_TEMPLATE = """
-    		<media>
+SEND_MOMENTS_MEDIA_TEMPLATE = """    		<media>
 			    <id>
 			        <![CDATA[{media_id}]]>
 			    </id>
@@ -247,8 +245,7 @@ SEND_MOMENTS_MEDIA_TEMPLATE = """
 			    <size totalSize="{media_size_totalSize}" width="{media_size_width}" height="{media_size_height}"></size>
 			</media>
 """
-SEND_MOMENTS_MEDIA_LIST_TEMPLATE = """
-		<mediaList>
+SEND_MOMENTS_MEDIA_LIST_TEMPLATE = """		<mediaList>
     		{media_elements}
 		</mediaList>
 """
