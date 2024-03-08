@@ -13,6 +13,10 @@
 - **视频号自动回复等**
 - **微信防撤回（撤回消息回调）**
 
+## 去水印机器在这里
+- [全网最强去水印机器人](https://github.com/kawika-git/WeChat-Video-Dewartermark)
+- 支持视频号、抖音、快手、小红书、微博等各大自媒体平台
+
 ## 系统要求 💻
 
 - **Windows操作系统** 或 **Windows云服务器**
